@@ -17,14 +17,12 @@ const GenieChat = () => {
 
     const pastOrders = "Masala Chai, Bun Maska";
 
+    // FIX 1: Simplified scroll logic to prevent useEffect size warnings
     useEffect(() => {
-        if (isOpen) {
-            const timeoutId = setTimeout(() => {
-                scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 100);
-            return () => clearTimeout(timeoutId);
+        if (isOpen && scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: "smooth" });
         }
-    }, [messages.length, isLoading]);
+    }, [messages, isLoading, isOpen]);
 
     const handleSend = async (e) => {
         if (e) e.preventDefault();
@@ -44,10 +42,14 @@ const GenieChat = () => {
                         name: session?.user?.name || "Guest",
                         pastOrders: pastOrders
                     },
-                    history: messages.map(m => ({
-                        role: m.role === 'genie' ? 'model' : 'user',
-                        parts: [{ text: m.text }]
-                    }))
+                    // FIX 2: Filter history so the FIRST message sent is always 'user'
+                    // This prevents the "got model" error from Google Generative AI
+                    history: messages
+                        .filter((m, i) => !(i === 0 && m.role === 'genie')) 
+                        .map(m => ({
+                            role: m.role === 'genie' ? 'model' : 'user',
+                            parts: [{ text: m.text }]
+                        }))
                 }),
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -57,7 +59,6 @@ const GenieChat = () => {
 
             let genieReply = data.reply;
 
-            // --- CART INTERCEPTION LOGIC ---
             if (genieReply.includes("[ADD_TO_CART:")) {
                 const itemName = genieReply.split("[ADD_TO_CART:")[1].split("]")[0].trim();
                 
@@ -156,6 +157,7 @@ const GenieChat = () => {
                                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white outline-none focus:border-yellow-400 transition-all disabled:opacity-50"
                             />
                             <button
+                                type="submit"
                                 disabled={isLoading}
                                 className={`p-2 rounded-xl transition-all flex items-center justify-center min-w-[40px] ${isLoading ? 'bg-white/5' : 'bg-yellow-400 text-black'}`}
                             >
