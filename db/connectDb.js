@@ -13,17 +13,23 @@
 // }
 // export default connectDB;
 
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 const connectDB = async () => {
-
+  // Check if we already have a connection
   if (mongoose.connections[0].readyState) {
-    return
+    return;
   }
 
-  await mongoose.connect(process.env.MONGODB_URI)
+  try {
+    // Attempt to connect using the environment variable
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error("Critical MongoDB Connection Error:", error.message);
+    // Optional: throw the error so the calling function knows it failed
+    throw new Error("Database connection failed");
+  }
+};
 
-  console.log("MongoDB Connected")
-}
-
-export default connectDB
+export default connectDB;
