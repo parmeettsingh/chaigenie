@@ -86,7 +86,7 @@ const Navbar = () => {
             )}
           </motion.div>
 
-          {/* AUTH SECTION */}
+          {/* AUTH SECTION (DESKTOP) */}
           {!session ? (
             <Link href="/login">
               <motion.button
@@ -129,7 +129,7 @@ const Navbar = () => {
           )}
         </ul>
 
-        {/* MOBILE MENU BUTTON (Includes Mobile Cart) */}
+        {/* MOBILE MENU BUTTON & CART */}
         <div className="flex items-center gap-4 md:hidden">
           <div className="relative" onClick={() => setCartOpen(true)}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -159,10 +159,27 @@ const Navbar = () => {
               {menuItems.map((item, index) => (
                 <button key={index} onClick={() => handleMenuClick(item)} className="text-xl font-bold text-left hover:text-yellow-400">{item}</button>
               ))}
+
+              {/* Logged in options for Mobile */}
+              {session && (
+                <>
+                  <div className="h-[1px] bg-white/10 w-full my-2" /> 
+                  <Link href="/dashboard" onClick={() => setOpen(false)} className="text-xl font-bold text-left hover:text-yellow-400">Dashboard</Link>
+                  <Link href={`/${session.user.name}`} onClick={() => setOpen(false)} className="text-xl font-bold text-left hover:text-yellow-400">Your Page</Link>
+                </>
+              )}
+
               {!session ? (
-                <Link href="/login" onClick={() => setOpen(false)}><button className="text-white bg-purple-600 font-medium rounded-lg text-sm px-5 py-2.5 w-full">Login</button></Link>
+                <Link href="/login" onClick={() => setOpen(false)}>
+                  <button className="text-white bg-purple-600 font-medium rounded-lg text-sm px-5 py-2.5 w-full mt-4">Login</button>
+                </Link>
               ) : (
-                <button onClick={() => { setOpen(false); handleSignOut(); }} className="text-red-400 font-bold text-left">Sign Out</button>
+                <button 
+                  onClick={() => { setOpen(false); handleSignOut(); }} 
+                  className="text-red-400 font-bold text-left mt-auto pb-10"
+                >
+                  Sign Out
+                </button>
               )}
             </motion.div>
           )}
@@ -224,7 +241,7 @@ const Navbar = () => {
                     <span className="text-yellow-400">₹{(subtotal * 1.05).toFixed(0)}</span>
                   </div>
                   <button onClick={() => {
-                    setCartOpen(false); // Close drawer/modal if open
+                    setCartOpen(false);
                     router.push('/checkout');
                   }} 
                   className="w-full bg-yellow-400 text-black py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-yellow-300 transition-all shadow-xl">
@@ -240,4 +257,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;    
+export default Navbar;
