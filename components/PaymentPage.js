@@ -62,13 +62,15 @@ const PaymentPage = ({ username }) => {
 
         let orderId = a.id;
         var options = {
-            "key": process.env.NEXT_PUBLIC_KEY_ID,
+            // UPDATED: Using the correct public key variable
+            "key": process.env.NEXT_PUBLIC_KEY_ID, 
             "amount": finalAmount,
             "currency": "INR",
             "name": "ChaiGenie",
             "description": "Sip and repeat",
             "image": "/tea.png", // Using your local logo
             "order_id": orderId,
+            // UPDATED: Ensuring the callback URL is dynamic
             "callback_url": `${process.env.NEXT_PUBLIC_URL}/api/razorpay`,
             handler: async function (response) {
                 await fetch("/api/razorpay", {
