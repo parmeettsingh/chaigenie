@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { notify } from '@/utils/toast';
 import Image from 'next/image';
-import Script from "next/script"; // Added for Razorpay
+import Script from "next/script";
 
 const CheckoutPage = () => {
     const { cartItems, subtotal } = useCart();
@@ -17,39 +17,46 @@ const CheckoutPage = () => {
         name: "",
         address: "",
         phone: "",
+        pincode: "", // Added pincode to state
         notes: "",
-        paymentMethod: "upi", // Set a default for Razorpay prefill
+        paymentMethod: "upi",
     });
 
     const handlePlaceOrder = async (e) => {
         e.preventDefault();
+        
+        // Mandatory PIN Code check
+        if (!formData.pincode || formData.pincode.length !== 6) {
+            notify.error("Genie needs a valid 6-digit PIN code to find you!");
+            return;
+        }
+
         setLoading(true);
 
-        // If Cash on Delivery is selected, bypass Razorpay
         if (formData.paymentMethod === 'cash') {
             setTimeout(() => {
                 setLoading(false);
                 notify.success("Wish Received! Pay the Genie at your door. ☕✨");
-                router.push("/order-success");
+                router.push(`/order-success?pincode=${formData.pincode}`);
             }, 2000);
             return;
         }
 
         try {
-            // 1. Create the order on your server
-            // Note: Use the total bill including GST if needed
             const totalBill = Math.round(subtotal * 1.05); 
             
             const res = await fetch("/api/create-order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: totalBill }),
+                body: JSON.stringify({ 
+                    amount: totalBill,
+                    pincode: formData.pincode // Sending pincode to backend
+                }),
             });
             
             const data = await res.json();
             const orderId = data.orderId;
 
-            // 2. Configure Razorpay options
             const options = {
                 key: process.env.NEXT_PUBLIC_KEY_ID,
                 amount: totalBill * 100,
@@ -102,10 +109,8 @@ const CheckoutPage = () => {
 
     return (
         <div className="min-h-screen bg-slate-950 text-white pt-32 pb-20 px-4 md:px-8 relative overflow-hidden">
-            {/* Razorpay SDK */}
             <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
             
-            {/* Background Glows to match Layout */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_500px_at_50%_200px,#3e3e3e,transparent)] opacity-30 pointer-events-none" />
 
             <div className="max-w-6xl mx-auto relative z-10">
@@ -150,6 +155,19 @@ const CheckoutPage = () => {
                                 </div>
                             </div>
 
+                            {/* Added PIN Code Field here */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">PIN Code</label>
+                                <input
+                                    required 
+                                    type="text"
+                                    maxLength="6"
+                                    className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-yellow-400 transition-all text-sm"
+                                    placeholder="6-Digit PIN Code"
+                                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                                />
+                            </div>
+
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Delivery Address</label>
                                 <textarea
@@ -170,7 +188,6 @@ const CheckoutPage = () => {
                                 />
                             </div>
 
-                            {/* --- PAYMENT METHOD SELECTION --- */}
                             <div className="space-y-4 pt-4">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">
                                     Select Payment Method
@@ -254,7 +271,6 @@ const CheckoutPage = () => {
                             </p>
                         </div>
                     </motion.div>
-
                 </div>
             </div>
         </div>

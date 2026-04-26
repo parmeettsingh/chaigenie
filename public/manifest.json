@@ -1,0 +1,22 @@
+{
+  "name": "ChaiGenie: AI Quick Commerce",
+  "short_name": "ChaiGenie",
+  "description": "Your AI-powered assistant for quick chai and snacks.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#facc15",
+  "icons": [
+    {
+      "src": "/tea.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/tea.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

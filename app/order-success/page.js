@@ -1,13 +1,28 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import confetti from 'canvas-confetti';
+import dynamic from 'next/dynamic';
 
-const OrderSuccess = () => {
+// 🛠️ DYNAMICALLY IMPORT LEAFLET (To avoid SSR errors)
+const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false });
+
+// Fix for Leaflet Icon issues in Next.js
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+const OrderSuccessContent = () => {
   const router = useRouter();
   const [statusIndex, setStatusIndex] = useState(0);
+  const [orderId, setOrderId] = useState(null);
+
+  // 📍 Mausam Vihar, Delhi Coordinates
+  const pickupLocation = [28.6432, 77.2917]; 
 
   const statuses = [
     { icon: "🕯️", label: "Rubbing the Lamp...", sub: "We've received your wish!" },
@@ -17,97 +32,72 @@ const OrderSuccess = () => {
   ];
 
   useEffect(() => {
-    // 🎊 Trigger Celebration
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ['#fac815', '#ffffff', '#fb923c']
-    });
+    setOrderId(Math.floor(Math.random() * 10000));
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
 
-    // 🕒 Cycle through status updates
     const interval = setInterval(() => {
       setStatusIndex((prev) => (prev < statuses.length - 1 ? prev + 1 : prev));
     }, 4000);
-
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 pt-20 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_600px_at_50%_50%,#fac81515,transparent)] pointer-events-none" />
+  // Custom Genie Icon for Leaflet
+  const genieIcon = typeof window !== 'undefined' ? L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/754/754848.png',
+    iconSize: [45, 45],
+    iconAnchor: [22, 45],
+  }) : null;
 
-      <div className="max-w-xl w-full text-center relative z-10">
-        {/* Floating Genie Icon */}
-        <motion.div
-          animate={{ y: [0, -20, 0], rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="text-8xl mb-8 inline-block drop-shadow-[0_0_30px_rgba(250,204,21,0.4)]"
-        >
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 pt-24 relative overflow-hidden">
+      <div className="max-w-2xl w-full text-center relative z-10">
+        <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 4, repeat: Infinity }} className="text-8xl mb-8">
           🧞‍♂️
         </motion.div>
 
-        <motion.h1 
-          initial={{ scale: 0.8, opacity: 0 }} 
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-4xl md:text-6xl font-black italic text-yellow-400 mb-4 uppercase tracking-tighter"
-        >   
-          WISH GRANTED!
-        </motion.h1>
-        
-        <p className="text-gray-400 font-bold uppercase tracking-[0.3em] text-[10px] mb-12">
-          Order ID: #CHAI-{Math.floor(Math.random() * 10000)}
-        </p>
+        <h1 className="text-4xl md:text-6xl font-black italic text-yellow-400 mb-2 uppercase">WISH GRANTED!</h1>
+        <p className="text-gray-500 font-mono text-sm mb-10 tracking-widest">ORDER ID: #CHAI-{orderId}</p>
 
-        {/* --- PROGRESS TRACKER --- */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 mb-10 shadow-2xl">
-          <div className="flex flex-col items-center gap-6">
-            <motion.div 
-              key={statusIndex}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-5xl"
-            >
-              {statuses[statusIndex].icon}
-            </motion.div>
-            
-            <div>
-              <h3 className="text-xl font-black uppercase tracking-widest text-white mb-2">
-                {statuses[statusIndex].label}
-              </h3>
-              <p className="text-gray-500 text-xs font-medium italic">
-                {statuses[statusIndex].sub}
-              </p>
-            </div>
-
-            {/* Visual Progress Bar */}
-            <div className="w-full h-1.5 bg-white/5 rounded-full mt-4 overflow-hidden">
-              <motion.div 
-                initial={{ width: "0%" }}
-                animate={{ width: `${((statusIndex + 1) / statuses.length) * 100}%` }}
-                className="h-full bg-yellow-400 shadow-[0_0_10px_#fac815]"
-              />
-            </div>
+        {/* Status Tracker */}
+        <div className="bg-white/5 border border-white/10 p-6 rounded-2xl mb-8 backdrop-blur-md">
+          <div className="text-4xl mb-2">{statuses[statusIndex].icon}</div>
+          <h3 className="text-xl font-bold">{statuses[statusIndex].label}</h3>
+          <p className="text-sm text-gray-400">{statuses[statusIndex].sub}</p>
+          <div className="w-full bg-white/10 h-1.5 rounded-full mt-6 overflow-hidden">
+            <motion.div animate={{ width: `${((statusIndex + 1) / statuses.length) * 100}%` }} className="bg-yellow-400 h-full" />
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 justify-center">
-          <button 
-            onClick={() => router.push('/')}
-            className="px-8 py-4 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
-          >
-            Back to Home
-          </button>
-          <button 
-            className="px-8 py-4 rounded-2xl bg-yellow-400 text-black text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-yellow-400/20"
-          >
-            Track on Map
-          </button>
+        {/* 🗺️ LEAFLET MAP */}
+        <div className="mt-6 h-[400px] w-full rounded-2xl overflow-hidden border border-yellow-400/30 shadow-2xl relative z-0">
+          <MapContainer center={pickupLocation} zoom={15} style={{ height: "100%", width: "100%" }}>
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            />
+            {genieIcon && (
+              <Marker position={pickupLocation} icon={genieIcon}>
+                <Popup>Genie is brewing here! ☕</Popup>
+              </Marker>
+            )}
+          </MapContainer>
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/80 z-[1000] px-4 py-2 rounded-full border border-white/10 text-[10px] text-yellow-400 font-bold uppercase tracking-widest">
+            Live from Mausam Vihar
+          </div>
         </div>
+
+        <button onClick={() => router.push('/')} className="mt-8 px-8 py-3 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all font-bold uppercase text-xs tracking-widest">
+          Back to Home
+        </button>
       </div>
     </div>
   );
 };
+
+const OrderSuccess = () => (
+  <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-yellow-400">Summoning...</div>}>
+    <OrderSuccessContent />
+  </Suspense>
+);
 
 export default OrderSuccess;

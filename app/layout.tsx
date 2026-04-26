@@ -21,9 +21,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Updated Metadata with PWA and Theme configurations
 export const metadata: Metadata = {
   title: "ChaiGenie – Tap, Wish, Sip",
   description: "A smarter way to satisfy your chai cravings.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ChaiGenie",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -33,6 +43,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* PWA Primary Tags */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#facc15" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        {/* Support for older browsers/Android */}
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-[radial-gradient(circle_500px_at_50%_200px,#3e3e3e,transparent)]`}
       >
