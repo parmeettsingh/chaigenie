@@ -3,7 +3,6 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import confetti from 'canvas-confetti';
 import dynamic from 'next/dynamic';
 
 // 🛠️ DYNAMICALLY IMPORT LEAFLET (To avoid SSR errors)
@@ -20,9 +19,10 @@ const OrderSuccessContent = () => {
   const router = useRouter();
   const [statusIndex, setStatusIndex] = useState(0);
   const [orderId, setOrderId] = useState(null);
+  const [isClient, setIsClient] = useState(false); // Check for client-side
 
   // 📍 Mausam Vihar, Delhi Coordinates
-  const pickupLocation = [28.6432, 77.2917]; 
+  const pickupLocation = [28.6432, 77.2917];
 
   const statuses = [
     { icon: "🕯️", label: "Rubbing the Lamp...", sub: "We've received your wish!" },
@@ -32,8 +32,15 @@ const OrderSuccessContent = () => {
   ];
 
   useEffect(() => {
+    setIsClient(true); // Now we know we are in the browser
     setOrderId(Math.floor(Math.random() * 10000));
-    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
+    // Fix: Dynamically import and run confetti only on the client
+    const runConfetti = async () => {
+      const confetti = (await import('canvas-confetti')).default;
+      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    };
+    runConfetti();
 
     const interval = setInterval(() => {
       setStatusIndex((prev) => (prev < statuses.length - 1 ? prev + 1 : prev));
@@ -42,11 +49,14 @@ const OrderSuccessContent = () => {
   }, []);
 
   // Custom Genie Icon for Leaflet
-  const genieIcon = typeof window !== 'undefined' ? L.icon({
+  const genieIcon = isClient ? L.icon({
     iconUrl: 'https://cdn-icons-png.flaticon.com/512/754/754848.png',
     iconSize: [45, 45],
     iconAnchor: [22, 45],
   }) : null;
+
+  // Prevent Prerendering of browser-only UI
+  if (!isClient) return null;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 pt-24 relative overflow-hidden">
