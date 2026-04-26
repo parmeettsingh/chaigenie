@@ -5,23 +5,22 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
-// 🛠️ DYNAMICALLY IMPORT LEAFLET (To avoid SSR errors)
+// 🛠️ DYNAMICALLY IMPORT LEAFLET COMPONENTS
 const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false });
 
-// Fix for Leaflet Icon issues in Next.js
-import L from 'leaflet';
+// Import CSS only (Safe for SSR)
 import 'leaflet/dist/leaflet.css';
 
 const OrderSuccessContent = () => {
   const router = useRouter();
   const [statusIndex, setStatusIndex] = useState(0);
   const [orderId, setOrderId] = useState(null);
-  const [isClient, setIsClient] = useState(false); // Check for client-side
+  const [isClient, setIsClient] = useState(false);
+  const [genieIcon, setGenieIcon] = useState(null);
 
-  // 📍 Mausam Vihar, Delhi Coordinates
   const pickupLocation = [28.6432, 77.2917];
 
   const statuses = [
@@ -32,10 +31,21 @@ const OrderSuccessContent = () => {
   ];
 
   useEffect(() => {
-    setIsClient(true); // Now we know we are in the browser
+    setIsClient(true);
     setOrderId(Math.floor(Math.random() * 10000));
 
-    // Fix: Dynamically import and run confetti only on the client
+    // Fix: Move Leaflet icon logic inside useEffect
+    const initLeaflet = async () => {
+        const L = (await import('leaflet')).default;
+        const icon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/754/754848.png',
+            iconSize: [45, 45],
+            iconAnchor: [22, 45],
+        });
+        setGenieIcon(icon);
+    };
+    initLeaflet();
+
     const runConfetti = async () => {
       const confetti = (await import('canvas-confetti')).default;
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
@@ -48,14 +58,6 @@ const OrderSuccessContent = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Custom Genie Icon for Leaflet
-  const genieIcon = isClient ? L.icon({
-    iconUrl: 'https://cdn-icons-png.flaticon.com/512/754/754848.png',
-    iconSize: [45, 45],
-    iconAnchor: [22, 45],
-  }) : null;
-
-  // Prevent Prerendering of browser-only UI
   if (!isClient) return null;
 
   return (
@@ -68,7 +70,6 @@ const OrderSuccessContent = () => {
         <h1 className="text-4xl md:text-6xl font-black italic text-yellow-400 mb-2 uppercase">WISH GRANTED!</h1>
         <p className="text-gray-500 font-mono text-sm mb-10 tracking-widest">ORDER ID: #CHAI-{orderId}</p>
 
-        {/* Status Tracker */}
         <div className="bg-white/5 border border-white/10 p-6 rounded-2xl mb-8 backdrop-blur-md">
           <div className="text-4xl mb-2">{statuses[statusIndex].icon}</div>
           <h3 className="text-xl font-bold">{statuses[statusIndex].label}</h3>
@@ -78,12 +79,11 @@ const OrderSuccessContent = () => {
           </div>
         </div>
 
-        {/* 🗺️ LEAFLET MAP */}
         <div className="mt-6 h-[400px] w-full rounded-2xl overflow-hidden border border-yellow-400/30 shadow-2xl relative z-0">
           <MapContainer center={pickupLocation} zoom={15} style={{ height: "100%", width: "100%" }}>
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              attribution='&copy; OpenStreetMap'
             />
             {genieIcon && (
               <Marker position={pickupLocation} icon={genieIcon}>
